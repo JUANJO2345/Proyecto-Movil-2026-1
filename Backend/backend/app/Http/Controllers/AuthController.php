@@ -4,82 +4,60 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    // REGISTER
-    public function register(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6'
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'operator'
-        ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Usuario registrado correctamente',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user
-        ], 201);
-    }
-
-    // LOGIN
+    // LOGIN WEB
     public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+{
+    // 1. Validar campos
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required'
+    ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-
-            throw ValidationException::withMessages([
-                'email' => ['Credenciales incorrectas']
-            ]);
-        }
-
-        $user = User::where('email', $request->email)->first();
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Login exitoso',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user
-        ]);
+    // 2. Intentar autenticar de forma tradicional
+    if (!Auth::attempt($request->only('email', 'password'))) {
+        return redirect()->back()
+            ->withInput($request->only('email'))
+            ->with('error', 'Las credenciales proporcionadas no coinciden con nuestros registros.');
     }
 
-    // LOGOUT
+    // 3. Obtener el usuario autenticado
+    $user = Auth::user();
+
+    /**
+     * 🔍 PRUEBA DE DIAGNÓSTICO TEMPORAL:
+     * Quita las dos barras (//) de la línea de abajo para congelar el login 
+     * y ver en pantalla qué rol tiene exactamente el usuario que intentas probar.
+     */
+    // dd($user->role); 
+
+
+    // 4. VALIDACIÓN DE ROL: Convertimos a minúsculas para evitar fallos de mayúsculas
+    if (strtolower($user->role) !== 'admin') {
+        Auth::logout(); // Destruimos la sesión inmediatamente
+
+        return redirect()->back()
+            ->withInput($request->only('email'))
+            ->with('error', 'Acceso denegado. Solo los administradores pueden ingresar aquí.');
+    }
+
+    // 5. Si es admin, regenerar sesión y continuar
+    $request->session()->regenerate();
+
+    return redirect()->route('web.dashboard'); 
+}
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        Auth::logout();
 
-        return response()->json([
-            'message' => 'Logout exitoso'
-        ]);
-    }
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-    // USUARIO AUTENTICADO
-    public function me(Request $request)
-    {
-        return response()->json(
-            $request->user()
-        );
+        return redirect()->route('login');
     }
 }
