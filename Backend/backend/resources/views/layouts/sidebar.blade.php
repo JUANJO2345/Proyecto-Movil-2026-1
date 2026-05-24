@@ -2,116 +2,60 @@
 
     <div class="flex items-center gap-3 mb-8">
 
-        <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
-
-            <span class="material-symbols-outlined">
-                inventory_2
-            </span>
+        <img src="{{ asset('img/mi-logo.jpg') }}" 
+             alt="Inventy Pro Logo" 
+             class="h-10 w-auto object-contain">
 
         </div>
-
-        <div>
-
-            <h1 class="text-2xl font-black text-blue-700">
-                Inventy
-            </h1>
-
-            <p class="text-xs text-slate-400">
-                Gestión Pro
-            </p>
-
-        </div>
-
-    </div>
 
     <nav class="flex flex-col gap-2">
 
         <a href="/dashboard"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-200/50">
-
-            <span class="material-symbols-outlined">
-                dashboard
-            </span>
-
+            <span class="material-symbols-outlined">dashboard</span>
             Dashboard
-
         </a>
 
         <a href="/products"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-200/50">
-
-            <span class="material-symbols-outlined">
-                inventory_2
-            </span>
-
+            <span class="material-symbols-outlined">inventory_2</span>
             Productos
-
         </a>
 
         <a href="/categories"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-200/50">
-
-            <span class="material-symbols-outlined">
-                category
-            </span>
-
+            <span class="material-symbols-outlined">category</span>
             Categorías
-
         </a>
 
         <a href="/suppliers"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-200/50">
-
-            <span class="material-symbols-outlined">
-                local_shipping
-            </span>
-
+            <span class="material-symbols-outlined">local_shipping</span>
             Proveedores
-
         </a>
 
         <a href="/warehouses"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-200/50">
-
-            <span class="material-symbols-outlined">
-                warehouse
-            </span>
-
+            <span class="material-symbols-outlined">warehouse</span>
             Bodegas
-
         </a>
 
         <a href="/inventories"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-200/50">
-
-            <span class="material-symbols-outlined">
-                analytics
-            </span>
-
+            <span class="material-symbols-outlined">analytics</span>
             Inventario
-
         </a>
 
         <a href="/movements"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-200/50">
-
-            <span class="material-symbols-outlined">
-                swap_horiz
-            </span>
-
+            <span class="material-symbols-outlined">swap_horiz</span>
             Movimientos
-
         </a>
 
         <a href="/users"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-200/50">
-
-            <span class="material-symbols-outlined">
-                group
-            </span>
-
+            <span class="material-symbols-outlined">group</span>
             Usuarios
-
         </a>
 
     </nav>
