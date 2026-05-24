@@ -3,63 +3,82 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Inventory;
+use App\Models\Product;
+use App\Models\Warehouse;
 use Illuminate\Http\Request;
 
 class InventoryControllerWeb extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $inventories = Inventory::with([
+            'product',
+            'warehouse'
+        ])->get();
+
+        return view(
+            'inventories.index',
+            compact('inventories')
+        );
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        $products = Product::all();
+        $warehouses = Warehouse::all();
+
+        return view(
+            'inventories.create',
+            compact(
+                'products',
+                'warehouses'
+            )
+        );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        Inventory::create($request->all());
+
+        return redirect()
+            ->route('web.inventories.index');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(string $id)
     {
-        //
+        $inventory = Inventory::findOrFail($id);
+
+        $products = Product::all();
+        $warehouses = Warehouse::all();
+
+        return view(
+            'inventories.edit',
+            compact(
+                'inventory',
+                'products',
+                'warehouses'
+            )
+        );
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        //
+        $inventory = Inventory::findOrFail($id);
+
+        $inventory->update($request->all());
+
+        return redirect()
+            ->route('web.inventories.index');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        //
+        $inventory = Inventory::findOrFail($id);
+
+        $inventory->delete();
+
+        return redirect()
+            ->route('web.inventories.index');
     }
 }

@@ -12,7 +12,7 @@ class MovementSeeder extends Seeder
         Movement::create([
             'user_id' => 1,
             'product_id' => 1,
-            'warehouse_id' => 1,
+            'inventory_id' => 1,
             'type' => 'entrada',
             'quantity' => 15
         ]);
@@ -20,7 +20,7 @@ class MovementSeeder extends Seeder
         Movement::create([
             'user_id' => 2,
             'product_id' => 2,
-            'warehouse_id' => 1,
+            'inventory_id' => 1,
             'type' => 'salida',
             'quantity' => 3
         ]);

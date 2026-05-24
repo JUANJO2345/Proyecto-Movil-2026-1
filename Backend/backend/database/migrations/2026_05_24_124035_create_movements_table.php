@@ -22,7 +22,7 @@ return new class extends Migration
                 ->constrained()
                 ->onDelete('cascade');
 
-            $table->foreignId('warehouse_id')
+            $table->foreignId('inventory_id')
                 ->constrained()
                 ->onDelete('cascade');
 

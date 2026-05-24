@@ -7,24 +7,25 @@ use Illuminate\Database\Eloquent\Model;
 class Movement extends Model
 {
     protected $fillable = [
-    'user_id',
-    'product_id',
-    'warehouse_id',
-    'type',
-    'quantity'
+        'product_id',
+        'inventory_id',
+        'user_id',
+        'type',
+        'quantity'
     ];
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function warehouse()
+    public function inventory()
     {
-        return $this->belongsTo(Warehouse::class);
+        return $this->belongsTo(Inventory::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

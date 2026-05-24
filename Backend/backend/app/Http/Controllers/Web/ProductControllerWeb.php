@@ -3,63 +3,77 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+
+use App\Models\Product;
+use App\Models\Category;
+use App\Models\Supplier;
+
 use Illuminate\Http\Request;
 
 class ProductControllerWeb extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $products = Product::with([
+            'category',
+            'supplier'
+        ])->get();
+
+        return view('products.index', compact('products'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        $categories = Category::all();
+        $suppliers = Supplier::all();
+
+        return view('products.create', compact(
+            'categories',
+            'suppliers'
+        ));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        Product::create($request->all());
+
+        return redirect()->route('web.products.index');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
-        //
+        $product = Product::findOrFail($id);
+
+        return view('web.products.show', compact('product'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(string $id)
     {
-        //
+        $product = Product::findOrFail($id);
+
+        $categories = Category::all();
+        $suppliers = Supplier::all();
+
+        return view('products.edit', compact(
+            'product',
+            'categories',
+            'suppliers'
+        ));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        //
+        $product = Product::findOrFail($id);
+
+        $product->update($request->all());
+
+        return redirect()->route('web.products.index');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        //
+        Product::destroy($id);
+
+        return redirect()->route('web.products.index');
     }
 }
