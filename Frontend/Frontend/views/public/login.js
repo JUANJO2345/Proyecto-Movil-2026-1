@@ -1,120 +1,111 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
-import { Ionicons } from '@expo/vector-icons';
-import { login } from '../../services/api';
+import React, { useState, useContext } from 'react';
+import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { login } from '../../services/api'; // Ajusta esta ruta según la ubicación de tu api.js
+import { AuthContext } from '../../context/AuthContext';
 
-export default function LoginScreen({ onLogin, navigation }) {
-    // Hooks de estado locales de la vista
+export default function LoginScreen({ navigation }) {
+    // 💡 Consumimos la acción 'loginState' de nuestro Contexto Global
+    var { loginState } = useContext(AuthContext); 
+
     var [email, setEmail] = useState('');
     var [password, setPassword] = useState('');
     var [loading, setLoading] = useState(false);
+    var [error, setError] = useState('');
 
-    function handleLoginSubmit() {
+    function handleLogin() {
+        setError('');
         if (!email.trim() || !password.trim()) {
-            Alert.alert('Error', 'Por favor ingresa email y contraseña');
+            setError('Por favor, rellena todos los campos.');
             return;
         }
 
         setLoading(true);
-
-        // Consumimos tu servicio fetch nativo
+        
         login(email, password)
-            .then(function(result) {
-                if (result && result.access_token) {
-                    // Guardamos el token y el email de forma segura en el dispositivo
-                    SecureStore.setItemAsync('userToken', result.access_token);
-                    SecureStore.setItemAsync('userEmail', email);
+            .then(function (res) {
+                // 🔍 CONTROL DE AUDITORÍA: Ver en la terminal de Expo qué responde Laravel exactamente
+                console.log("=== RESPUESTA DE TU API DE LARAVEL ===", res);
 
-                    // Guardamos el ID del operario si viene en la respuesta
-                    if (result.user && result.user.id) {
-                        SecureStore.setItemAsync('userId', result.user.id.toString());
-                    }
+                // 🔀 DETECTOR FLEXIBLE: Captura tanto 'res.token' como 'res.access_token'
+                var tokenEncontrado = res.token || res.access_token;
 
-                    // 🔥 LE AVISAMOS AL PADRE (App.js) para cambiar al Stack Privado
-                    onLogin(result.access_token);
+                if (tokenEncontrado) {
+                    // Envía el token al AuthContext. El contexto actualiza App.js y te redirige solo.
+                    loginState(tokenEncontrado); 
                 } else {
-                    Alert.alert('Error', result.message || 'Credenciales inválidas');
+                    setError('Respuesta del servidor no válida. No se encontró la propiedad del token.');
                 }
             })
-            .catch(function(error) {
-                if (error.responseData) {
-                    var apiError = error.responseData;
-                    if (apiError.errors && apiError.errors.email) {
-                        Alert.alert('Error', apiError.errors.email[0]);
-                    } else if (apiError.errors && apiError.errors.role) {
-                        Alert.alert('Acceso Denegado', apiError.errors.role[0]); // El bloqueo al Admin
-                    } else {
-                        Alert.alert('Error', apiError.message || 'Error al iniciar sesión.');
-                    }
-                } else {
-                    Alert.alert('Error', 'No se pudo conectar con el servidor. Revisa tu conexión.');
-                }
+            .catch(function (err) {
+                console.log("Error capturado en Login:", err);
+                setError(err.message || 'Error de conexión. Revisa tus credenciales.');
             })
-            .finally(function() {
+            .finally(function () {
                 setLoading(false);
             });
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.card}>
-                <View style={styles.logoContainer}>
-                    <Text style={styles.logo}>📦</Text>
-                    <Text style={styles.title}>INVENTY</Text>
+        <SafeAreaView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+                <View style={styles.brandContainer}>
+                    <Text style={styles.logoText}>Inventy</Text>
+                    <Text style={styles.subtitle}>Gestión de Inventarios Móvil</Text>
                 </View>
-                <Text style={styles.subtitle}>Aplicación Móvil - Operarios</Text>
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor="rgba(255,255,255,0.6)"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                />
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Iniciar Sesión</Text>
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Contraseña"
-                    placeholderTextColor="rgba(255,255,255,0.6)"
-                    secureTextEntry={true}
-                    value={password}
-                    onChangeText={setPassword}
-                />
+                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-                <Pressable style={styles.button} onPress={handleLoginSubmit} disabled={loading}>
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.buttonText}>INICIO DE SESIÓN</Text>
-                    )}
-                </Pressable>
+                    <Text style={styles.label}>Correo Electrónico</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="operario@inventy.com"
+                        placeholderTextColor="#94a3b8"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        value={email}
+                        onChangeText={setEmail}
+                    />
 
-                <View style={styles.divider} />
+                    <Text style={styles.label}>Contraseña</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="••••••••"
+                        placeholderTextColor="#94a3b8"
+                        secureTextEntry={true}
+                        value={password}
+                        onChangeText={setPassword}
+                    />
 
-                <Pressable 
-                    style={styles.buttonSecondary} 
-                    onPress={function() { navigation.navigate('Register'); }}
-                >
-                    <Text style={styles.buttonText}>REGISTRARSE</Text>
-                </Pressable>
-            </View>
-        </View>
+                    <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
+                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Ingresar al Sistema</Text>}
+                    </Pressable>
+
+                    <Pressable style={styles.registerLink} onPress={function() { navigation.navigate('Register'); }}>
+                        <Text style={styles.registerLinkText}>¿No tienes cuenta? Regístrate aquí</Text>
+                    </Pressable>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#1e3a8a', justifyContent: 'center', alignItems: 'center', padding: 20 },
-    card: { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 24, padding: 28, width: '100%', maxWidth: 400, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
-    logoContainer: { alignItems: 'center', marginBottom: 8 },
-    logo: { fontSize: 54, marginBottom: 4 },
-    title: { color: '#fff', fontSize: 28, fontWeight: 'bold', letterSpacing: 2 },
-    subtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 14, textAlign: 'center', marginBottom: 32 },
-    input: { width: '100%', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, marginBottom: 18, color: '#fff', fontSize: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
-    button: { backgroundColor: '#2563eb', width: '100%', paddingVertical: 14, borderRadius: 14, alignItems: 'center', marginTop: 6 },
-    buttonSecondary: { backgroundColor: '#475569', width: '100%', paddingVertical: 14, borderRadius: 14, alignItems: 'center', marginTop: 6 },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', letterSpacing: 1 },
-    divider: { width: '80%', height: 1, backgroundColor: 'rgba(255,255,255,0.3)', marginVertical: 20 }
+    container: { flex: 1, backgroundColor: '#f8fafc' },
+    scrollContainer: { padding: 24, justifyContent: 'center', flexGrow: 1 },
+    brandContainer: { alignItems: 'center', marginBottom: 32 },
+    logoText: { fontSize: 42, fontWeight: '900', color: '#1d63ed' },
+    subtitle: { fontSize: 16, color: '#64748b', marginTop: 4, fontWeight: '500' },
+    card: { backgroundColor: '#fff', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#f1f5f9', elevation: 2 },
+    cardTitle: { fontSize: 22, fontWeight: '800', color: '#0f172a', marginBottom: 20 },
+    label: { fontSize: 14, fontWeight: '700', color: '#334155', marginBottom: 6, marginTop: 12 },
+    input: { width: '100%', height: 50, borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 12, paddingHorizontal: 16, fontSize: 15, color: '#334155', backgroundColor: '#fff' },
+    button: { backgroundColor: '#1d63ed', width: '100%', height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 24 },
+    buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    errorText: { color: '#ef4444', backgroundColor: '#fee2e2', padding: 12, borderRadius: 8, fontSize: 14, fontWeight: '600', marginBottom: 12, textAlign: 'center' },
+    registerLink: { marginTop: 16, alignItems: 'center' },
+    registerLinkText: { color: '#1d63ed', fontSize: 14, fontWeight: '600' }
 });

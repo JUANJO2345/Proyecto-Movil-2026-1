@@ -1,29 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import React, { useContext } from 'react'; // 👈 Aseguramos la importación de useContext
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
+import { AuthContext } from '../../context/AuthContext'; // 👈 Ruta al contexto global
 
-export default function ProfileScreen({ onLogout }) {
-    var [email, setEmail] = useState('');
-
-    useEffect(function() {
-        SecureStore.getItemAsync('userEmail')
-            .then(function(savedEmail) {
-                if (savedEmail) setEmail(savedEmail);
-            });
-    }, []);
-
-    function handleExitRequest() {
-        Alert.alert(
-            'Cerrar Sesión',
-            '¿Está seguro de que desea salir del sistema Inventy?',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'Confirmar Salida', style: 'destructive', onPress: onLogout }
-            ]
-        );
-    }
+export default function ProfileScreen() {
+    // 💡 Extraemos la función global para destruir el token del SecureStore
+    var { logoutState } = useContext(AuthContext); 
 
     return (
         <SafeAreaView style={styles.container}>
@@ -31,40 +14,60 @@ export default function ProfileScreen({ onLogout }) {
                 <Text style={styles.headerTitle}>Mi Perfil</Text>
             </View>
 
-            <View style={styles.profileCard}>
+            <View style={styles.avatarContainer}>
                 <View style={styles.avatarCircle}>
                     <Ionicons name="person" size={50} color="#1d63ed" />
                 </View>
-                
-                <Text style={styles.userName}>Operador del Sistema</Text>
-                <Text style={styles.userEmail}>{email || 'usuario.operario@inventy.com'}</Text>
-                
-                <View style={styles.badge}>
-                    <Text style={styles.badgeText}>Rol: Operario</Text>
+                <Text style={styles.userName}>Operario Activo</Text>
+                <Text style={styles.userRole}>Control de Stock e Inventarios</Text>
+            </View>
+
+            <View style={styles.infoCard}>
+                <View style={styles.infoRow}>
+                    <Ionicons name="shield-checkmark-outline" size={20} color="#64748b" style={styles.icon} />
+                    <View>
+                        <Text style={styles.infoLabel}>Estado de Sesión</Text>
+                        <Text style={styles.infoValue}>Autenticado vía Laravel Sanctum</Text>
+                    </View>
+                </View>
+
+                <View style={styles.infoRow}>
+                    <Ionicons name="phone-portrait-outline" size={20} color="#64748b" style={styles.icon} />
+                    <View>
+                        <Text style={styles.infoLabel}>Dispositivo Sincronizado</Text>
+                        <Text style={styles.infoValue}>Terminal Móvil Local</Text>
+                    </View>
                 </View>
             </View>
 
             <View style={styles.spacer} />
 
-            <Pressable style={styles.logoutButton} onPress={handleExitRequest}>
-                <Ionicons name="log-out-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+            {/* 👇 El evento onPress ahora llama directamente a logoutState */}
+            <Pressable 
+                style={styles.logoutButton} 
+                onPress={function() { logoutState(); }}
+            >
+                <Ionicons name="log-out-outline" size={22} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.logoutButtonText}>Cerrar Sesión Segura</Text>
             </Pressable>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
-    header: { backgroundColor: '#1d63ed', paddingVertical: 16, alignItems: 'center', marginBottom: 30 },
-    headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-    profileCard: { alignItems: 'center', paddingHorizontal: 24 },
-    avatarCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#eff6ff', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#bfdbfe' },
-    userName: { fontSize: 22, fontWeight: 'bold', color: '#1e293b' },
-    userEmail: { fontSize: 15, color: '#64748b', marginTop: 4, marginBottom: 16 },
-    badge: { backgroundColor: '#e0f2fe', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
-    badgeText: { color: '#0369a1', fontSize: 13, fontWeight: '700' },
+    container: { flex: 1, backgroundColor: '#f8fafc' },
+    header: { padding: 24, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+    headerTitle: { fontSize: 26, fontWeight: '900', color: '#0f172a' },
+    avatarContainer: { alignItems: 'center', marginTop: 30, marginBottom: 24 },
+    avatarCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#e0f2fe', justifyContent: 'center', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#bae6fd' },
+    userName: { fontSize: 22, fontWeight: '800', color: '#0f172a' },
+    userRole: { fontSize: 14, color: '#64748b', marginTop: 2, fontWeight: '500' },
+    infoCard: { backgroundColor: '#fff', marginHorizontal: 24, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: '#f1f5f9', elevation: 1 },
+    infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+    icon: { marginRight: 16 },
+    infoLabel: { fontSize: 12, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' },
+    infoValue: { fontSize: 15, fontWeight: '600', color: '#334155', marginTop: 2 },
     spacer: { flex: 1 },
-    logoutButton: { backgroundColor: '#ef4444', marginHorizontal: 24, marginBottom: 20, height: 50, borderRadius: 25, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-    logoutButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+    logoutButton: { backgroundColor: '#ef4444', marginHorizontal: 24, marginBottom: 24, height: 52, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', elevation: 2 },
+    logoutButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' }
 });
