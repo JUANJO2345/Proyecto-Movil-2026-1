@@ -91,12 +91,28 @@ function deleteProduct(id, token) {
         }
     }).then(function (response) { return response.json(); });
 }
-
+function getInventories(token) {
+    return fetch(BASE_URL + '/inventories', { // Tu endpoint global de inventarios
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    })
+    .then(function (response) {
+        if (!response.ok) {
+            throw new Error('Error al obtener el catálogo de inventarios');
+        }
+        return response.json();
+    });
+}
 module.exports = {
     login: login,
     register: register,
     getProducts: getProducts,
     postProduct: postProduct,
     deleteProduct: deleteProduct,
-    updateProduct: updateProduct
+    updateProduct: updateProduct,
+    getInventories: getInventories,
 };
