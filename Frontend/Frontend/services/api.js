@@ -1,6 +1,17 @@
-var BASE_URL = 'http://192.168.1.126:8000/api'; // Cambia esto por la URL de tu API Laravel
+var BASE_URL = 'http://10.213.247.235:8000/api'; // Cambia esto por la URL de tu API Laravel
 
 // --- OPERACIONES DE AUTENTICACIÓN ---
+function getMe(token) {
+    return fetch(BASE_URL + '/me', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }).then(function (response) {
+        return response.json();
+    });
+}
 
 function login(email, password) {
     return fetch(BASE_URL + '/login', {
@@ -70,16 +81,18 @@ function postProduct(product, token) {
     }).then(function (response) { return response.json(); });
 }
 
-function updateProduct(product, id, token) {
+function updateProduct(id, data, token) {
     return fetch(BASE_URL + '/products/' + id, {
-        method: 'PUT',
+        method: 'PUT', // Usamos PUT como estándar REST
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Authorization': 'Bearer ' + token
         },
-        body: JSON.stringify(product)
-    }).then(function (response) { return response.json(); });
+        body: JSON.stringify(data)
+    }).then(function (response) {
+        return response.json();
+    });
 }
 
 function deleteProduct(id, token) {
@@ -106,6 +119,29 @@ function getInventories(token) {
         }
         return response.json();
     });
+    // En src/services/api.js
+
+}
+function storeMovement(token, movementData) {
+    return fetch(BASE_URL + '/movements', { // Asegúrate de que tu ruta en Laravel sea /api/movements
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(movementData)
+    })
+    .then(function (response) {
+        return response.json().then(function (data) {
+            if (!response.ok) {
+                var error = new Error('Movement Error');
+                error.responseData = data;
+                throw error;
+            }
+            return data;
+        });
+    });
 }
 module.exports = {
     login: login,
@@ -115,4 +151,6 @@ module.exports = {
     deleteProduct: deleteProduct,
     updateProduct: updateProduct,
     getInventories: getInventories,
+    getMe: getMe,
+    storeMovement: storeMovement
 };

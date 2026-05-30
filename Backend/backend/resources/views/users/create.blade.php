@@ -21,7 +21,8 @@
 
             <input type="text"
                    name="name"
-                   class="w-full p-4 rounded-2xl border border-slate-200">
+                   class="w-full p-4 rounded-2xl border border-slate-200"
+                   required>
         </div>
 
         <div>
@@ -31,7 +32,8 @@
 
             <input type="email"
                    name="email"
-                   class="w-full p-4 rounded-2xl border border-slate-200">
+                   class="w-full p-4 rounded-2xl border border-slate-200"
+                   required>
         </div>
 
         <div>
@@ -41,7 +43,22 @@
 
             <input type="password"
                    name="password"
-                   class="w-full p-4 rounded-2xl border border-slate-200">
+                   class="w-full p-4 rounded-2xl border border-slate-200"
+                   required>
+        </div>
+
+        <div>
+            <label class="font-bold block mb-2">
+                Rol del Sistema
+            </label>
+
+            <select name="role" 
+                    class="w-full p-4 rounded-2xl border border-slate-200 bg-white" 
+                    required>
+                <option value="" disabled selected>Seleccione un rol...</option>
+                <option value="admin">Administrador (Acceso Panel Web Monolito)</option>
+                <option value="operator">Operador (Acceso Aplicación Móvil)</option>
+            </select>
         </div>
 
         <button class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold">

@@ -1,12 +1,41 @@
-import React, { useContext } from 'react'; // 👈 Aseguramos la importación de useContext
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useContext, useState, useEffect } from 'react'; // 👈 Añadimos useState y useEffect
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native'; // 👈 Añadimos ActivityIndicator para el estado de carga
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthContext } from '../../context/AuthContext'; // 👈 Ruta al contexto global
+import { AuthContext } from '../../context/AuthContext'; 
+import { getMe } from '../../services/api'; // 👈 Importamos tu función del archivo de servicios (Model)
 
 export default function ProfileScreen() {
-    // 💡 Extraemos la función global para destruir el token del SecureStore
-    var { logoutState } = useContext(AuthContext); 
+    // 💡 Extraemos logoutState y el token guardado en el contexto global
+    var { logoutState, userToken } = useContext(AuthContext); 
+
+    // 🏛️ Estados locales (ViewModel interno de la vista)
+    var [userData, setUserData] = useState(null);
+    var [loading, setLoading] = useState(true);
+
+    // 🔄 Efecto para traer los datos de Laravel Sanctum al cargar la pantalla
+    useEffect(function () {
+        if (userToken) {
+            getMe(userToken)
+                .then(function (data) {
+                    setUserData(data);
+                    setLoading(false);
+                })
+                .catch(function (error) {
+                    console.error("Error al obtener perfil:", error);
+                    setLoading(false);
+                });
+        }
+    }, [userToken]);
+
+    // ⏳ Si está cargando los datos de la API, muestra un indicador de carga limpio
+    if (loading) {
+        return (
+            <SafeAreaView style={[styles.container, styles.center]}>
+                <ActivityIndicator size="large" color="#1d63ed" />
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -18,8 +47,16 @@ export default function ProfileScreen() {
                 <View style={styles.avatarCircle}>
                     <Ionicons name="person" size={50} color="#1d63ed" />
                 </View>
-                <Text style={styles.userName}>Operario Activo</Text>
-                <Text style={styles.userRole}>Control de Stock e Inventarios</Text>
+                
+                {/* 👤 Muestra el nombre real de la base de datos de Laravel, si falla pone un valor por defecto */}
+                <Text style={styles.userName}>
+                    {userData && userData.name ? userData.name : 'Operario No Identificado'}
+                </Text>
+                
+                {/* 🔑 Muestra el rol dinámico o el correo electrónico del operario */}
+                <Text style={styles.userRole}>
+                    {userData && userData.email ? userData.email : 'Control de Stock e Inventarios'}
+                </Text>
             </View>
 
             <View style={styles.infoCard}>
@@ -42,7 +79,6 @@ export default function ProfileScreen() {
 
             <View style={styles.spacer} />
 
-            {/* 👇 El evento onPress ahora llama directamente a logoutState */}
             <Pressable 
                 style={styles.logoutButton} 
                 onPress={function() { logoutState(); }}
@@ -56,6 +92,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f8fafc' },
+    center: { justifyContent: 'center', alignItems: 'center' }, // 👈 Centrar el cargador
     header: { padding: 24, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
     headerTitle: { fontSize: 26, fontWeight: '900', color: '#0f172a' },
     avatarContainer: { alignItems: 'center', marginTop: 30, marginBottom: 24 },

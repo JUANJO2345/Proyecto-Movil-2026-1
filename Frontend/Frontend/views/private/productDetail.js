@@ -1,70 +1,75 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthContext } from '../../context/AuthContext';
+import { postProduct, updateProduct, deleteProduct } from '../../services/api';
 
 export default function ProductDetailScreen({ route, navigation }) {
-    var product = route.params?.product;
+    var { userToken } = useContext(AuthContext);
+    var item = route.params?.product; // Si existe, es edición
+    var isEditing = !!item;
 
-    if (!product) {
-        return (
-            <SafeAreaView style={styles.center}>
-                <Text style={styles.errorText}>No se seleccionó ningún producto.</Text>
-            </SafeAreaView>
-        );
+    var [name, setName] = useState(item?.name || '');
+    var [description, setDescription] = useState(item?.description || '');
+    var [price, setPrice] = useState(item?.price?.toString() || '');
+    var [loading, setLoading] = useState(false);
+
+    function handleSave() {
+        if (!name) return Alert.alert('Error', 'El nombre es obligatorio');
+        setLoading(true);
+        var data = { name, description, price };
+        
+        var action = isEditing ? updateProduct(item.id, data, userToken) : postProduct(data, userToken);
+        
+        action.then(() => {
+            Alert.alert('Éxito', 'Producto guardado');
+            navigation.goBack();
+        }).catch(() => Alert.alert('Error', 'No se pudo guardar')).finally(() => setLoading(false));
+    }
+
+    function handleDelete() {
+        Alert.alert('Eliminar', '¿Seguro?', [
+            { text: 'Cancelar' },
+            { text: 'Borrar', style: 'destructive', onPress: () => {
+                deleteProduct(item.id, userToken).then(() => navigation.goBack());
+            }}
+        ]);
     }
 
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Pressable style={styles.backButton} onPress={function() { navigation.goBack(); }}>
-                    <Ionicons name="arrow-back-outline" size={24} color="#fff" />
+                <Pressable onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color="#fff" /></Pressable>
+                <Text style={styles.headerTitle}>{isEditing ? 'Editar Producto' : 'Nuevo Producto'}</Text>
+                {isEditing ? <Pressable onPress={handleDelete}><Ionicons name="trash" size={24} color="#fff" /></Pressable> : <View style={{width:24}}/>}
+            </View>
+
+            <ScrollView style={styles.contentCard}>
+                <Text style={styles.label}>Nombre:</Text>
+                <TextInput style={styles.input} value={name} onChangeText={setName} />
+                
+                <Text style={styles.label}>Precio:</Text>
+                <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" />
+                
+                <Text style={styles.label}>Descripción:</Text>
+                <TextInput style={[styles.input, {height: 80}]} value={description} onChangeText={setDescription} multiline />
+
+                <Pressable style={styles.actionButton} onPress={handleSave} disabled={loading}>
+                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionButtonText}>{isEditing ? 'Guardar Cambios' : 'Crear Producto'}</Text>}
                 </Pressable>
-                <Text style={styles.headerTitle}>Detalles del Producto</Text>
-                <View style={{ width: 40 }} />
-            </View>
-
-            <View style={styles.contentCard}>
-                <View style={styles.infoGroup}>
-                    <Text style={styles.label}>Nombre:</Text>
-                    <Text style={styles.value}>{product.name}</Text>
-                </View>
-
-                <View style={styles.infoGroup}>
-                    <Text style={styles.label}>Precio:</Text>
-                    <Text style={styles.value}>${product.price || '0.00'}</Text>
-                </View>
-
-                <View style={styles.infoGroup}>
-                    <Text style={styles.label}>Descripción:</Text>
-                    <Text style={styles.valueDescription}>{product.description || '[Sin descripción disponible por el momento].'}</Text>
-                </View>
-            </View>
-
-            <Pressable 
-                style={styles.actionButton}
-                onPress={function() { 
-                    navigation.navigate('Movimientos', { defaultProduct: product }); 
-                }}
-            >
-                <Text style={styles.actionButtonText}>Registrar Movimiento</Text>
-            </Pressable>
+            </ScrollView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1d63ed', paddingVertical: 14, paddingHorizontal: 16 },
-    backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+    header: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: '#1d63ed' },
     headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-    contentCard: { flex: 1, paddingHorizontal: 24, paddingTop: 20 },
-    infoGroup: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-    label: { fontSize: 16, fontWeight: '600', color: '#64748b', marginBottom: 4 },
-    value: { fontSize: 18, fontWeight: 'bold', color: '#1e293b' },
-    valueDescription: { fontSize: 15, color: '#334155', lineHeight: 22 },
-    actionButton: { backgroundColor: '#1d63ed', marginHorizontal: 24, marginBottom: 20, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-    actionButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    errorText: { fontSize: 16, color: '#ef4444', fontWeight: '500' }
+    contentCard: { padding: 24 },
+    label: { fontSize: 16, color: '#64748b', marginBottom: 5, marginTop: 15 },
+    input: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 12, fontSize: 16 },
+    actionButton: { backgroundColor: '#1d63ed', padding: 15, borderRadius: 25, alignItems: 'center', marginTop: 30 },
+    actionButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });

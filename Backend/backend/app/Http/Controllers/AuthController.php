@@ -7,57 +7,119 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    // LOGIN WEB
+    // 🔥 EL SECRETO: El constructor obliga a Laravel a tratar todo como JSON
+    public function __construct(Request $request)
+    {
+        // Forzamos a que la petición se comporte como si tuviera el Header 'Accept: application/json'
+        $request->headers->set('Accept', 'application/json');
+    }
+
+    // REGISTER
+    public function register(Request $request)
+    {
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|min:6'
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Error de validación en el registro.',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'operator' 
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Usuario registrado correctamente',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user
+        ], 201);
+    }
+
+    // LOGIN
     public function login(Request $request)
-{
-    // 1. Validar campos
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required'
-    ]);
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required'
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'El formato del correo o la contraseña no es válido.',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
-    // 2. Intentar autenticar de forma tradicional
-    if (!Auth::attempt($request->only('email', 'password'))) {
-        return redirect()->back()
-            ->withInput($request->only('email'))
-            ->with('error', 'Las credenciales proporcionadas no coinciden con nuestros registros.');
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json([
+                'message' => 'Error de autenticación.',
+                'errors' => [
+                    'email' => ['Las credenciales proporcionadas son incorrectas.']
+                ]
+            ], 401);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (strtolower($user->role) === 'admin') {
+            Auth::logout(); 
+
+            return response()->json([
+                'message' => 'Acceso denegado.',
+                'errors' => [
+                    'role' => ['Los administradores no tienen permitido el acceso a la aplicación móvil.']
+                ]
+            ], 403);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login exitoso',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user
+        ], 200);
     }
 
-    // 3. Obtener el usuario autenticado
-    $user = Auth::user();
-
-    /**
-     * 🔍 PRUEBA DE DIAGNÓSTICO TEMPORAL:
-     * Quita las dos barras (//) de la línea de abajo para congelar el login 
-     * y ver en pantalla qué rol tiene exactamente el usuario que intentas probar.
-     */
-    // dd($user->role); 
-
-
-    // 4. VALIDACIÓN DE ROL: Convertimos a minúsculas para evitar fallos de mayúsculas
-    if (strtolower($user->role) !== 'admin') {
-        Auth::logout(); // Destruimos la sesión inmediatamente
-
-        return redirect()->back()
-            ->withInput($request->only('email'))
-            ->with('error', 'Acceso denegado. Solo los administradores pueden ingresar aquí.');
-    }
-
-    // 5. Si es admin, regenerar sesión y continuar
-    $request->session()->regenerate();
-
-    return redirect()->route('web.dashboard'); 
-}
+    // LOGOUT
     public function logout(Request $request)
     {
-        Auth::logout();
+        $request->user()->currentAccessToken()->delete();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        return response()->json([
+            'message' => 'Logout exitoso'
+        ], 200);
+    }
 
-        return redirect()->route('login');
+    // USUARIO AUTENTICADO
+    public function me(Request $request)
+    {
+        if (!$request->user()) {
+            return response()->json([
+                'message' => 'No autenticado.',
+                'errors' => [
+                    'token' => ['El token de autenticación es inválido o ha expirado.']
+                ]
+            ], 401);
+        }
+
+        return response()->json($request->user(), 200);
     }
 }
